@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java's GeckonCatalog</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: #fff; line-height: 1.6; min-height: 100vh; }
+
+        /* ===== HEADER ===== */
+        .header { background: linear-gradient(90deg, #000 0%, #1a1a1a 100%); padding: 0.7rem 1rem; box-shadow: 0 4px 15px rgba(255,215,0,0.2); position: sticky; top: 0; z-index: 1000; }
+        .header-container { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        .logo { font-size: 1.4rem; font-weight: bold; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5); white-space: nowrap; }
+
+        /* Search bar */
+        .search-bar { flex: 1; max-width: 400px; position: relative; }
+        .search-bar input { width: 100%; padding: 0.5rem 2.5rem 0.5rem 1rem; background: #2d2d2d; border: 2px solid #444; color: #fff; border-radius: 20px; font-size: 0.9rem; outline: none; transition: border-color 0.3s; }
+        .search-bar input:focus { border-color: #ffd700; }
+        .search-bar input::placeholder { color: #888; }
+        .search-icon { position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); color: #ffd700; font-size: 1rem; cursor: pointer; }
+
+        /* Profile button */
+        .profile-wrapper { position: relative; }
+        .profile-btn { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #ffd700; cursor: pointer; overflow: hidden; background: #2d2d2d; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: box-shadow 0.3s; flex-shrink: 0; }
+        .profile-btn:hover { box-shadow: 0 0 12px rgba(255,215,0,0.5); }
+        .profile-btn img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-avatar-placeholder { color: #ffd700; font-size: 1.4rem; }
+
+        /* Profile Dropdown */
+        .profile-dropdown { display: none; position: absolute; right: 0; top: 52px; background: #1a1a1a; border: 2px solid #ffd700; border-radius: 12px; min-width: 220px; box-shadow: 0 8px 30px rgba(0,0,0,0.8); z-index: 2000; overflow: hidden; }
+        .profile-dropdown.open { display: block; animation: dropIn 0.2s ease; }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .profile-dropdown-header { padding: 1rem; background: linear-gradient(135deg, #2d2d2d, #3a3a3a); border-bottom: 1px solid #333; }
+        .profile-dropdown-name { font-weight: bold; color: #ffd700; font-size: 1rem; }
+        .profile-dropdown-phone { color: #aaa; font-size: 0.8rem; }
+        .profile-dropdown-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; color: #ddd; cursor: pointer; transition: background 0.2s; font-size: 0.9rem; border: none; background: none; width: 100%; text-align: left; }
+        .profile-dropdown-item:hover { background: #2d2d2d; color: #ffd700; }
+        .profile-dropdown-item.danger { color: #ff6666; }
+        .profile-dropdown-item.danger:hover { background: #3a1a1a; color: #ff4444; }
+        .profile-dropdown-divider { height: 1px; background: #333; margin: 0.3rem 0; }
+        .profile-dropdown-login { padding: 1rem; }
+        .btn-dd-login { width: 100%; padding: 0.7rem; background: linear-gradient(135deg, #ffd700, #ffed4e); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-bottom: 0.5rem; transition: all 0.2s; }
+        .btn-dd-login:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,215,0,0.4); }
+
+        /* ===== PROMO BANNER ===== */
+        .promo-section { max-width: 1400px; margin: 0.8rem auto 0; padding: 0 0.8rem; }
+        .promo-slider { position: relative; border-radius: 12px; overflow: hidden; background: #2d2d2d; aspect-ratio: 16/6; cursor: grab; touch-action: none; }
+        .promo-slider:active { cursor: grabbing; }
+        .promo-track { display: flex; height: 100%; transition: transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94); will-change: transform; }
+        .promo-slide { flex: 0 0 100%; width: 100%; height: 100%; overflow: hidden; }
+        .promo-slide-inner { width: 100%; height: 100%; transition: transform 0.3s ease; transform-origin: center center; }
+        .promo-slide img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; user-select: none; }
+        .promo-slide-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2d2d2d, #3a3a3a); color: #555; font-size: 1rem; flex-direction: column; gap: 0.5rem; }
+        .promo-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+        .promo-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.3s; }
+        .promo-dot.active { background: #ffd700; width: 20px; border-radius: 4px; }
+        .promo-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: #ffd700; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .promo-nav:hover { background: rgba(0,0,0,0.8); }
+        .promo-prev { left: 8px; }
+        .promo-next { right: 8px; }
+        .promo-zoom-hint { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5); color: #ffd700; font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; pointer-events: none; }
+
+        /* ===== FILTER BAR ===== */
+        .filter-section { max-width: 1400px; margin: 0.8rem auto 0; padding: 0 0.8rem; }
+        .filter-scroll { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: none; }
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        .filter-chip { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; background: #2d2d2d; border: 1.5px solid #444; color: #ccc; border-radius: 20px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; transition: all 0.2s; flex-shrink: 0; }
+        .filter-chip:hover, .filter-chip.active { background: #ffd700; color: #000; border-color: #ffd700; }
+        .filter-chip svg { width: 14px; height: 14px; }
+
+        /* Filter dropdown */
+        .filter-dropdown-wrapper { position: relative; }
+        .filter-dropdown-menu { display: none; position: fixed; top: 0; left: 0; background: #1a1a1a; border: 2px solid #ffd700; border-radius: 10px; min-width: 240px; max-width: 92vw; max-height: 80vh; overflow-y: auto; overflow-x: hidden; z-index: 1500; box-shadow: 0 8px 24px rgba(0,0,0,0.8); }
+        .filter-dropdown-menu.open { display: block; }
+        .filter-menu-item { padding: 0.7rem 1rem; color: #ccc; cursor: pointer; font-size: 0.85rem; transition: background 0.2s; border: none; background: none; width: 100%; text-align: left; }
+        .filter-menu-item:hover, .filter-menu-item.selected { background: #2d2d2d; color: #ffd700; }
+        .filter-menu-item.selected::after { content: ' ✓'; }
+
+        /* Location filter input */
+        .location-filter-input { padding: 0.5rem 1rem; width: 100%; }
+        .location-filter-input input { width: 100%; padding: 0.4rem 0.8rem; background: #2d2d2d; border: 1.5px solid #444; color: #fff; border-radius: 6px; font-size: 0.8rem; outline: none; }
+        .location-filter-input input:focus { border-color: #ffd700; }
+        .filter-menu-section-title { padding: 0.5rem 1rem 0.3rem; color: #ffd700; font-size: 0.72rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; }
+        .filter-menu-divider { height: 1px; background: #2a2a2a; margin: 0.3rem 0; }
+
+        /* ===== MAIN CONTAINER ===== */
+        .container { max-width: 1400px; margin: 0 auto; padding: 0.8rem; }
+
+        /* ===== PRODUCTS GRID — 2 cols on mobile ===== */
+        .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+        @media (min-width: 600px) { .products-grid { grid-template-columns: repeat(3, 1fr); gap: 1rem; } }
+        @media (min-width: 900px) { .products-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 1200px) { .products-grid { grid-template-columns: repeat(5, 1fr); } }
+        @media (min-width: 1500px) { .products-grid { grid-template-columns: repeat(6, 1fr); } }
+
+        /* ===== PRODUCT CARD — Shopee-like ===== */
+        .product-card { background: #2d2d2d; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: all 0.25s ease; cursor: pointer; border: 1.5px solid transparent; position: relative; }
+        .product-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(255,215,0,0.25); border-color: #ffd700; }
+        .product-image-wrap { position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden; background: #1a1a1a; }
+        .product-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+        .product-card:hover .product-image-wrap img { transform: scale(1.05); }
+        .product-badge { position: absolute; top: 6px; left: 6px; background: #ff4444; color: white; padding: 2px 7px; border-radius: 4px; font-weight: bold; font-size: 0.7rem; z-index: 1; }
+        .product-info { padding: 0.6rem; }
+        .product-name { font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.3rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; min-height: 2.2em; }
+        .product-price { font-size: 1rem; font-weight: bold; color: #ffd700; margin-bottom: 0.2rem; }
+        .product-meta { font-size: 0.72rem; color: #888; margin-bottom: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .btn-buy-small { width: 100%; padding: 0.5rem; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; font-size: 0.8rem; margin-top: 0.4rem; }
+        .btn-buy-small:hover { transform: scale(1.03); box-shadow: 0 4px 14px rgba(255,215,0,0.4); }
+        .btn-buy-small:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ===== MODAL ===== */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: flex-end; }
+        @media (min-width: 600px) { .modal { align-items: center; } }
+        .modal.active { display: flex; }
+        .modal-content { background: linear-gradient(135deg, #2d2d2d 0%, #3a3a3a 100%); padding: 1.5rem; border-radius: 16px 16px 0 0; box-shadow: 0 -8px 40px rgba(0,0,0,0.8); border: 2px solid #ffd700; border-bottom: none; width: 100%; max-height: 90vh; overflow-y: auto; }
+        @media (min-width: 600px) { .modal-content { border-radius: 16px; border-bottom: 2px solid #ffd700; max-width: 540px; width: 95%; max-height: 85vh; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; padding-bottom: 0.8rem; border-bottom: 2px solid #ffd700; }
+        .modal-title { font-size: 1.4rem; color: #ffd700; }
+        .close-btn { background: none; border: none; color: #ffd700; font-size: 1.8rem; cursor: pointer; transition: transform 0.3s; line-height: 1; }
+        .close-btn:hover { transform: rotate(90deg); color: #fff; }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; color: #ffd700; font-weight: bold; font-size: 0.9rem; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 0.7rem; background: #1a1a1a; border: 2px solid #3a3a3a; color: #fff; border-radius: 8px; font-family: inherit; transition: border-color 0.3s; font-size: 0.9rem; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #ffd700; box-shadow: 0 0 8px rgba(255,215,0,0.3); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-group small { color: #888; font-size: 0.75rem; margin-top: 0.3rem; display: block; }
+        .btn-primary { width: 100%; padding: 0.9rem; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #000; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; font-size: 0.95rem; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(255,215,0,0.4); }
+        .btn-secondary { width: 100%; padding: 0.8rem; background: #444; color: #fff; border: 1.5px solid #666; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; font-size: 0.9rem; margin-top: 0.5rem; }
+        .btn-secondary:hover { background: #555; }
+        .btn-danger { width: 100%; padding: 0.8rem; background: #ff4444; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 0.5rem; transition: all 0.2s; }
+        .btn-danger:hover { background: #dd0000; }
+
+        /* Auth tabs */
+        .auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; border-bottom: 2px solid #333; padding-bottom: 0.8rem; }
+        .auth-tab-btn { flex: 1; padding: 0.6rem 0.5rem; background: #1a1a1a; color: #aaa; border: none; border-radius: 6px; cursor: pointer; transition: all 0.3s; font-weight: bold; font-size: 0.8rem; }
+        .auth-tab-btn.active { background: #ffd700; color: #000; }
+        .auth-tab-content { display: none; }
+        .auth-tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .otp-timer { text-align: center; color: #ffd700; font-weight: bold; margin: 0.8rem 0; font-size: 1rem; }
+        .otp-timer.warning { color: #ff4444; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+        /* Panel tabs */
+        .panel-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; border-bottom: 2px solid #ffd700; padding-bottom: 0.8rem; }
+        .tab-btn { padding: 0.6rem 1rem; background: #1a1a1a; color: #aaa; border: none; border-radius: 6px; cursor: pointer; transition: all 0.3s; font-weight: bold; font-size: 0.8rem; }
+        .tab-btn.active { background: #ffd700; color: #000; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        /* Tables */
+        .products-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.8rem; }
+        .products-table th { background: #1a1a1a; color: #ffd700; padding: 0.7rem 0.5rem; text-align: left; border-bottom: 2px solid #ffd700; }
+        .products-table td { padding: 0.7rem 0.5rem; border-bottom: 1px solid #3a3a3a; color: #ccc; }
+        .products-table tr:hover { background: #3a3a3a; }
+        .table-image { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; }
+        .status-badge { padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        .status-tersedia { background: #44dd44; color: #000; }
+        .status-habis { background: #ff4444; color: #fff; }
+        .action-buttons { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .btn-action { padding: 0.35rem 0.6rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; transition: all 0.2s; font-weight: bold; }
+        .btn-hapus { background: #ff4444; color: white; }
+        .btn-hapus:hover { background: #dd0000; }
+        .btn-habis { background: #ffaa00; color: white; }
+        .btn-habis:hover { background: #ff8800; }
+        .btn-edit { background: #00aaff; color: white; }
+        .btn-edit:hover { background: #0088dd; }
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.8rem; }
+        .admin-table th { background: #1a1a1a; color: #ffd700; padding: 0.7rem 0.5rem; text-align: left; border-bottom: 2px solid #ffd700; }
+        .admin-table td { padding: 0.7rem 0.5rem; border-bottom: 1px solid #3a3a3a; color: #ccc; }
+
+        /* Password display */
+        .password-display { display: flex; align-items: center; gap: 0.5rem; background: #1a1a1a; padding: 0.5rem; border-radius: 4px; }
+        .btn-toggle-pass { background: none; border: none; color: #ffd700; cursor: pointer; font-size: 0.9rem; }
+        .btn-copy { background: #ffd700; color: #000; border: none; padding: 0.25rem 0.5rem; border-radius: 3px; cursor: pointer; font-size: 0.72rem; font-weight: bold; }
+        .btn-copy.copied { background: #44dd44; }
+
+        /* Detail modal */
+        #detailModal .modal-content { padding: 0; overflow: hidden; }
+        #detailModal .modal-header { padding: 0.8rem 1rem; margin-bottom: 0; border-radius: 16px 16px 0 0; }
+        #detailModal #detailContent { overflow-y: auto; max-height: calc(90vh - 56px); padding: 0; }
+        @media (min-width: 600px) { #detailModal #detailContent { max-height: calc(85vh - 56px); } }
+
+        /* Notifications */
+        .notification { position: fixed; top: 70px; right: 12px; left: 12px; padding: 1rem 1.2rem; background: #2d2d2d; color: #fff; border-radius: 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.6); border-left: 5px solid #ffd700; animation: slideIn 0.3s ease; z-index: 9999; font-size: 0.9rem; }
+        @media (min-width: 500px) { .notification { left: auto; width: 320px; } }
+        .notification.error { border-left-color: #ff4444; background: #3a1a1a; }
+        .notification.success { border-left-color: #44dd44; background: #1a3a1a; }
+        @keyframes slideIn { from{transform:translateY(-20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+        /* Loading */
+        .loading { display: inline-block; width: 18px; height: 18px; border: 3px solid #ffd700; border-radius: 50%; border-top-color: transparent; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+        .empty-state { text-align: center; padding: 3rem 1rem; color: #666; grid-column: 1/-1; }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        /* Promo admin panel */
+        .promo-admin-list { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem; }
+        .promo-admin-item { display: flex; align-items: center; gap: 0.8rem; background: #1a1a1a; padding: 0.7rem; border-radius: 8px; border: 1.5px solid #333; }
+        .promo-admin-thumb { width: 60px; height: 40px; object-fit: cover; border-radius: 5px; background: #2d2d2d; flex-shrink: 0; }
+        .promo-admin-info { flex: 1; font-size: 0.8rem; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-remove-promo { background: #ff4444; color: #fff; border: none; border-radius: 5px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.75rem; flex-shrink: 0; }
+
+        /* Profile edit avatar */
+        .avatar-edit-wrap { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .avatar-preview { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #ffd700; object-fit: cover; background: #2d2d2d; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #ffd700; overflow: hidden; flex-shrink: 0; }
+        .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .cooldown-note { color: #aaa; font-size: 0.75rem; margin-top: 0.3rem; display: block; }
+        .cooldown-note.warn { color: #ff8800; }
+
+        /* Photo slot bingkai */
+        .photo-slot { position:relative; width:70px; height:70px; border:2px dashed #555; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-direction:column; background:#1a1a1a; transition:border-color 0.2s; overflow:hidden; flex-shrink:0; }
+        .photo-slot:hover { border-color:#ffd700; }
+        .photo-slot.has-image { border-style:solid; border-color:#ffd700; }
+        .photo-slot.has-image .slot-num { display:none; }
+        .photo-slot.has-image .slot-label { display:none; }
+        .photo-slot img.slot-preview { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:6px; pointer-events:none; z-index:0; }
+        .slot-overlay { position:absolute; inset:0; cursor:pointer; z-index:1; display:block; }
+        .slot-overlay input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+        .slot-num { color:#555; font-weight:bold; font-size:0.9rem; position:relative; z-index:0; }
+        .slot-label { color:#ffd700; font-size:0.6rem; margin-top:2px; position:relative; z-index:0; }
+        .slot-del { position:absolute; top:2px; right:2px; background:rgba(255,68,68,0.85); color:#fff; border:none; border-radius:50%; width:16px; height:16px; font-size:0.6rem; cursor:pointer; display:none; align-items:center; justify-content:center; line-height:1; z-index:3; }
+        .photo-slot.has-image .slot-del { display:flex; }
+        .banner-slot { width:90px; height:55px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #ffd700; border-radius: 3px; }
+
+        /* Info box */
+        .info-box { background: #1a3a1a; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; border: 1.5px solid #44dd44; }
+        .info-box p { color: #44dd44; font-size: 0.9rem; }
+        .info-box p + p { color: #aaa; font-size: 0.8rem; margin-top: 0.3rem; }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+    <div class="header-container">
+        <div class="logo">Java's Gecko</div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Cari produk..." oninput="applyFilters()">
+            <span class="search-icon"></span>
+        </div>
+        <div class="profile-wrapper">
+            <div class="profile-btn" id="profileBtn" onclick="toggleProfileDropdown()">
+                <div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">👤</div>
+                <img id="profileAvatarImg" src="" alt="" style="display:none;">
+            </div>
+            <div class="profile-dropdown" id="profileDropdown">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== PROMO BANNER ===== -->
+<div class="promo-section">
+    <div class="promo-slider" id="promoSlider">
+        <div class="promo-track" id="promoTrack"></div>
+        <button class="promo-nav promo-prev" onclick="promoPrev()">‹</button>
+        <button class="promo-nav promo-next" onclick="promoNext()">›</button>
+        <div class="promo-dots" id="promoDots"></div>
+        <div class="promo-zoom-hint">Pinch/Scroll to zoom</div>
+    </div>
+</div>
+
+<!-- ===== FILTER BAR ===== -->
+<div class="filter-section">
+    <div class="filter-scroll">
+        <!-- Unified Filter -->
+        <div class="filter-dropdown-wrapper">
+            <div class="filter-chip" id="allFilterChip" onclick="toggleFilterMenu(event, 'allFilterMenu', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+                <span id="allFilterChipLabel">Filter &amp; Urutkan</span>
+            </div>
+            <div class="filter-dropdown-menu" id="allFilterMenu" style="min-width:240px;">
+                <div class="filter-menu-section-title">Urutkan</div>
+                <button class="filter-menu-item" id="fSort-newest" onclick="setSortFilter(event, 'newest', this)">Terbaru</button>
+                <button class="filter-menu-item" id="fSort-oldest" onclick="setSortFilter(event, 'oldest', this)">Terlama</button>
+                <button class="filter-menu-item" id="fSort-price_low" onclick="setSortFilter(event, 'price_low', this)">Harga Terendah</button>
+                <button class="filter-menu-item" id="fSort-price_high" onclick="setSortFilter(event, 'price_high', this)">Harga Tertinggi</button>
+                <div class="filter-menu-divider"></div>
+                <div class="filter-menu-section-title">Radius</div>
+                <button class="filter-menu-item" id="fRadius-all" onclick="setRadiusFilter(event, null, this)">Semua Radius</button>
+                <button class="filter-menu-item" id="fRadius-10" onclick="setRadiusFilter(event, 10, this)">&lt;10 km dari saya</button>
+                <button class="filter-menu-item" id="fRadius-20" onclick="setRadiusFilter(event, 20, this)">&gt;20 km dari saya</button>
+                <div class="filter-menu-divider"></div>
+                <div class="filter-menu-section-title">Kota Domisili</div>
+                <div class="location-filter-input">
+                    <input type="text" id="filterCity" placeholder="Ketik nama kota..." oninput="applyFilters()">
+                </div>
+                <div style="padding:0.5rem 1rem 0.7rem;">
+                    <button onclick="clearAllFilters()" style="width:100%;padding:0.5rem;background:#333;color:#ffd700;border:1.5px solid #ffd700;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:bold;">✕ Hapus Semua Filter</button>
+                </div>
+            </div>
+        </div>
+        <!-- Active indicator chip -->
+        <div class="filter-chip active" id="clearFiltersChip" style="display:none;" onclick="clearAllFilters()">✕ Hapus Filter</div>
+    </div>
+</div>
+
+<!-- ===== PRODUCTS ===== -->
+<div class="container">
+    <div class="products-grid" id="productsGrid">
+        <div class="empty-state"><div class="loading"></div></div>
+    </div>
+</div>
+
+<!-- ===== MODAL: AUTH ===== -->
+<div class="modal" id="authModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Login / Daftar</h2>
+            <button class="close-btn" onclick="closeModal('authModal')">×</button>
+        </div>
+        <div class="auth-tabs">
+            <button class="auth-tab-btn active" onclick="switchAuthTab('loginTab', this)">Login</button>
+            <button class="auth-tab-btn" onclick="switchAuthTab('registerTab', this)">Daftar</button>
+            <button class="auth-tab-btn" onclick="switchAuthTab('forgotTab', this)">Lupa Password</button>
+        </div>
+        <!-- LOGIN -->
+        <div id="loginTab" class="auth-tab-content active">
+            <div class="form-group">
+                <label>Nomor Telepon</label>
+                <input type="tel" id="loginPhone" placeholder="08123456789">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Masukkan password">
+            </div>
+            <button class="btn-primary" onclick="handleLogin()">Login</button>
+        </div>
+        <!-- REGISTER -->
+        <div id="registerTab" class="auth-tab-content">
+            <div id="registerStep1">
+                <div class="form-group"><label>Nama Lengkap</label><input type="text" id="regName" placeholder="Masukkan nama"></div>
+                <div class="form-group"><label>Nomor Telepon</label><input type="tel" id="regPhone" placeholder="08123456789"></div>
+                <div class="form-group"><label>Domisili (Kota)</label><input type="text" id="regLocation" placeholder="Kota, Provinsi"></div>
+                <button class="btn-primary" onclick="sendOTPToWhatsApp()">Minta OTP ke WhatsApp Admin</button>
+            </div>
+            <div id="registerStep2" style="display:none;">
+                <div class="info-box"><p>✅ Kode OTP telah dikirim ke WhatsApp Anda!</p><p>Silakan hubungi admin untuk mendapatkan kode OTP</p></div>
+                <div class="form-group">
+                    <label>Kode OTP (6 digit)</label>
+                    <input type="text" id="regOTP" placeholder="Contoh: 123456" maxlength="6">
+                    <div class="otp-timer" id="otpTimer"></div>
+                </div>
+                <div class="form-group"><label>Buat Password</label><input type="password" id="regPassword" placeholder="Password minimal 6 karakter"></div>
+                <button class="btn-primary" onclick="verifyOTPAndRegister()">✅ Verifikasi & Daftar</button>
+                <button class="btn-secondary" onclick="backToRegisterStep1()">← Kembali</button>
+            </div>
+        </div>
+        <!-- FORGOT -->
+        <div id="forgotTab" class="auth-tab-content">
+            <div id="forgotStep1">
+                <div class="form-group"><label>Nomor Telepon</label><input type="tel" id="forgotPhone" placeholder="08123456789"></div>
+                <button class="btn-primary" onclick="sendForgotOTP()">Minta OTP ke WhatsApp Admin</button>
+            </div>
+            <div id="forgotStep2" style="display:none;">
+                <div class="info-box"><p>✅ Kode OTP telah dikirim ke WhatsApp Anda!</p></div>
+                <div class="form-group">
+                    <label>Kode OTP</label>
+                    <input type="text" id="forgotOTP" placeholder="Contoh: 123456" maxlength="6">
+                    <div class="otp-timer" id="forgotOtpTimer"></div>
+                </div>
+                <div class="form-group"><label>Password Baru</label><input type="password" id="forgotNewPassword" placeholder="Password minimal 6 karakter"></div>
+                <button class="btn-primary" onclick="verifyForgotOTPAndReset()">✅ Verifikasi & Reset</button>
+                <button class="btn-secondary" onclick="backToForgotStep1()">← Kembali</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: UPLOAD ===== -->
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Unggah Produk Baru</h2>
+            <button class="close-btn" onclick="closeModal('uploadModal')">×</button>
+        </div>
+        <div class="form-group">
+            <label>Foto Produk (max 5 foto)</label>
+            <small>Foto 1 = foto utama. Klik bingkai untuk pilih foto, klik ✕ untuk hapus.</small>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
+                <div class="photo-slot" id="uSlot_0"><span class="slot-num">1</span><span class="slot-label">Utama</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'uSlot_0',0)"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'uSlot_0',0)">✕</button></div>
+                <div class="photo-slot" id="uSlot_1"><span class="slot-num">2</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'uSlot_1',1)"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'uSlot_1',1)">✕</button></div>
+                <div class="photo-slot" id="uSlot_2"><span class="slot-num">3</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'uSlot_2',2)"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'uSlot_2',2)">✕</button></div>
+                <div class="photo-slot" id="uSlot_3"><span class="slot-num">4</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'uSlot_3',3)"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'uSlot_3',3)">✕</button></div>
+                <div class="photo-slot" id="uSlot_4"><span class="slot-num">5</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'uSlot_4',4)"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'uSlot_4',4)">✕</button></div>
+            </div>
+        </div>
+        <div class="form-group"><label>Nama Produk</label><input type="text" id="productName" placeholder="Contoh: Leopard Gecko"></div>
+        <div class="form-group"><label>Deskripsi Produk</label><textarea id="productDescription" placeholder="Jelaskan detail produk..."></textarea></div>
+        <div class="form-group"><label>Harga Produk (Rp)</label><input type="number" id="productPrice" placeholder="Contoh: 250000"></div>
+        <div class="form-group"><label>Domisili Produk</label><input type="text" id="productLocation" placeholder="Domisili penjual"></div>
+        <button class="btn-primary" onclick="handleUploadProduct()">Unggah Produk</button>
+    </div>
+</div>
+
+<!-- ===== MODAL: DETAIL ===== -->
+<div class="modal" id="detailModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="detailTitle">Detail Produk</h2>
+            <button class="close-btn" onclick="closeModal('detailModal')">×</button>
+        </div>
+        <div id="detailContent"></div>
+    </div>
+</div>
+
+<!-- ===== MODAL: SELLER PANEL ===== -->
+<div class="modal" id="sellerPanelModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Panel Penjual</h2>
+            <button class="close-btn" onclick="closeModal('sellerPanelModal')">×</button>
+        </div>
+        <div id="sellerProductsList"></div>
+    </div>
+</div>
+
+<!-- ===== MODAL: EDIT PRODUCT ===== -->
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Edit Produk</h2>
+            <button class="close-btn" onclick="closeModal('editModal')">×</button>
+        </div>
+        <div class="form-group">
+            <label>Foto Produk (kosongkan bingkai jika tidak ingin ubah, max 5)</label>
+            <small>Klik bingkai untuk ganti foto. Foto 1 = foto utama.</small>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
+                <div class="photo-slot" id="eSlot_0"><span class="slot-num">1</span><span class="slot-label">Utama</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'eSlot_0',0,'edit')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'eSlot_0',0,'edit')">✕</button></div>
+                <div class="photo-slot" id="eSlot_1"><span class="slot-num">2</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'eSlot_1',1,'edit')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'eSlot_1',1,'edit')">✕</button></div>
+                <div class="photo-slot" id="eSlot_2"><span class="slot-num">3</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'eSlot_2',2,'edit')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'eSlot_2',2,'edit')">✕</button></div>
+                <div class="photo-slot" id="eSlot_3"><span class="slot-num">4</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'eSlot_3',3,'edit')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'eSlot_3',3,'edit')">✕</button></div>
+                <div class="photo-slot" id="eSlot_4"><span class="slot-num">5</span><label class="slot-overlay"><input type="file" accept="image/*" onchange="loadSlot(this,'eSlot_4',4,'edit')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'eSlot_4',4,'edit')">✕</button></div>
+            </div>
+        </div>
+        <div class="form-group"><label>Nama Produk</label><input type="text" id="editProductName"></div>
+        <div class="form-group"><label>Deskripsi Produk</label><textarea id="editProductDescription"></textarea></div>
+        <div class="form-group"><label>Harga Produk (Rp)</label><input type="number" id="editProductPrice"></div>
+        <div class="form-group"><label>Domisili Penjual</label><input type="text" id="editProductLocation"></div>
+        <button class="btn-primary" onclick="handleEditProduct()">Simpan Perubahan</button>
+    </div>
+</div>
+
+<!-- ===== MODAL: EDIT PROFILE ===== -->
+<div class="modal" id="editProfileModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Edit Profil</h2>
+            <button class="close-btn" onclick="closeModal('editProfileModal')">×</button>
+        </div>
+        <div class="avatar-edit-wrap">
+            <div class="avatar-preview" id="profileEditPreview">👤</div>
+            <div>
+                <div id="profileEditPhotoStatus"></div>
+                <label style="cursor:pointer; color:#ffd700; font-size:0.85rem; display:block; margin-top:0.3rem;">
+                    📷 Ganti Foto Profil
+                    <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;" onchange="previewProfilePhoto(this)">
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Nama Lengkap</label>
+            <input type="text" id="editProfileName" placeholder="Nama lengkap">
+            <span class="cooldown-note" id="nameCooldownNote"></span>
+        </div>
+        <div class="form-group">
+            <label>Password Baru (kosongkan jika tidak ingin ubah)</label>
+            <input type="password" id="editProfilePassword" placeholder="Password baru (min 6 karakter)">
+        </div>
+        <div class="form-group">
+            <label>Konfirmasi Password Baru</label>
+            <input type="password" id="editProfilePasswordConfirm" placeholder="Ulangi password baru">
+        </div>
+        <button class="btn-primary" onclick="saveProfileEdit()">Simpan Perubahan</button>
+
+        <!-- HAPUS AKUN -->
+        <div style="margin-top:2rem;padding-top:1.5rem;border-top:2px solid #3a1a1a;">
+            <h3 style="color:#ff4444;margin-bottom:0.8rem;font-size:1rem;">⚠️ Hapus Akun</h3>
+            <p style="color:#aaa;font-size:0.82rem;margin-bottom:0.5rem;">Tindakan ini <strong style="color:#ff4444;">tidak dapat dibatalkan</strong>. Semua data dan produk Anda akan dihapus permanen.</p>
+            <p style="color:#ccc;font-size:0.82rem;margin-bottom:0.8rem;">Untuk konfirmasi, ketik:</p>
+            <div style="background:#1a1a1a;padding:0.7rem;border-radius:6px;margin-bottom:0.8rem;border-left:3px solid #ff4444;">
+                <code style="color:#ff6666;font-size:0.85rem;">delete this account</code><br>
+                <code style="color:#ff6666;font-size:0.85rem;" id="deleteAccountNameHint"></code>
+            </div>
+            <div class="form-group" style="margin-bottom:0.5rem;">
+                <input type="text" id="deleteAccountConfirmInput" placeholder="Ketik konfirmasi di sini..." style="border-color:#3a1a1a;">
+            </div>
+            <button class="btn-danger" onclick="handleDeleteOwnAccount()" style="background:#8b0000;">🗑️ Hapus Akun Saya</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: ADMIN PANEL ===== -->
+<div class="modal" id="adminPanelModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">🔑 Panel Admin</h2>
+            <button class="close-btn" onclick="closeModal('adminPanelModal')">×</button>
+        </div>
+        <div id="adminLoginForm">
+            <div class="form-group"><label>🔑 Password Admin</label><input type="password" id="adminPassword" placeholder="Password admin"></div>
+            <button class="btn-primary" onclick="loginAdmin()">🔓 Login Admin</button>
+        </div>
+        <div id="adminPanelContent" style="display:none;">
+            <div class="panel-tabs">
+                <button class="tab-btn active" onclick="switchAdminTab('adminUbahPassword', this)">🔐 Password</button>
+                <button class="tab-btn" onclick="switchAdminTab('adminNomor', this)">📞 Nomor</button>
+                <button class="tab-btn" onclick="switchAdminTab('adminOTP', this)">🔑 OTP</button>
+                <button class="tab-btn" onclick="switchAdminTab('adminPromo', this)">🖼️ Promo</button>
+                <button class="tab-btn" onclick="switchAdminTab('adminLihatSemua', this)">👁️ Data</button>
+            </div>
+            <!-- Password -->
+            <div id="adminUbahPassword" class="tab-content active">
+                <h3 style="color:#ffd700;margin-bottom:1rem;">🔐 Ubah Password Admin</h3>
+                <div class="form-group"><label>Password Lama</label><input type="password" id="oldAdminPassword" placeholder="Password lama"></div>
+                <div class="form-group"><label>Password Baru</label><input type="password" id="newAdminPassword" placeholder="Password baru"></div>
+                <button class="btn-primary" onclick="changeAdminPassword()">✅ Ubah Password</button>
+            </div>
+            <!-- Nomor -->
+            <div id="adminNomor" class="tab-content">
+                <h3 style="color:#ffd700;margin-bottom:1rem;">📞 Nomor WhatsApp Admin</h3>
+                <div style="background:#1a1a1a;padding:0.8rem;border-radius:8px;margin-bottom:1rem;border-left:4px solid #ffd700;">
+                    <p style="color:#888;font-size:0.8rem;">Nomor Saat Ini:</p>
+                    <p style="color:#ffd700;font-weight:bold;" id="currentAdminPhone">-</p>
+                </div>
+                <div class="form-group">
+                    <label>Nomor WhatsApp Baru</label>
+                    <input type="tel" id="newAdminPhone" placeholder="Contoh: 62812345678">
+                    <small>Format: 62XXXXXXXXXXX</small>
+                </div>
+                <button class="btn-primary" onclick="updateAdminPhone()">✅ Simpan Nomor</button>
+            </div>
+            <!-- OTP -->
+            <div id="adminOTP" class="tab-content">
+                <h3 style="color:#ffd700;margin-bottom:1rem;">🔐 Kelola Kode OTP</h3>
+                <div style="background:#1a1a1a;padding:0.8rem;border-radius:8px;margin-bottom:1rem;border-left:4px solid #ffd700;">
+                    <p style="color:#888;font-size:0.8rem;">Kode OTP Saat Ini:</p>
+                    <div class="password-display">
+                        <span id="otpDisplay" style="flex:1;letter-spacing:3px;">••••••</span>
+                        <button class="btn-toggle-pass" onclick="toggleOTPDisplay()">👁️</button>
+                        <button class="btn-copy" onclick="copyOTP()">📋 Copy</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Kode OTP Baru (6 digit)</label>
+                    <input type="text" id="newOTP" placeholder="Contoh: 123456" maxlength="6">
+                </div>
+                <button class="btn-primary" onclick="updateOTP()">✅ Simpan OTP</button>
+            </div>
+            <!-- Promo Banners -->
+            <div id="adminPromo" class="tab-content">
+                <h3 style="color:#ffd700;margin-bottom:1rem;">🖼️ Kelola Banner Promo</h3>
+                <div class="form-group">
+                    <label>Slot Banner (max 5 banner)</label>
+                    <small>Klik bingkai untuk pilih foto banner. Klik ✕ untuk hapus slot.</small>
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.6rem;">
+                        <div class="photo-slot banner-slot" id="bSlot_0"><span class="slot-num">1</span><label class="slot-overlay" onclick="event.stopPropagation()"><input type="file" accept="image/*" onchange="loadSlot(this,'bSlot_0',0,'banner')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'bSlot_0',0,'banner')">✕</button></div>
+                        <div class="photo-slot banner-slot" id="bSlot_1"><span class="slot-num">2</span><label class="slot-overlay" onclick="event.stopPropagation()"><input type="file" accept="image/*" onchange="loadSlot(this,'bSlot_1',1,'banner')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'bSlot_1',1,'banner')">✕</button></div>
+                        <div class="photo-slot banner-slot" id="bSlot_2"><span class="slot-num">3</span><label class="slot-overlay" onclick="event.stopPropagation()"><input type="file" accept="image/*" onchange="loadSlot(this,'bSlot_2',2,'banner')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'bSlot_2',2,'banner')">✕</button></div>
+                        <div class="photo-slot banner-slot" id="bSlot_3"><span class="slot-num">4</span><label class="slot-overlay" onclick="event.stopPropagation()"><input type="file" accept="image/*" onchange="loadSlot(this,'bSlot_3',3,'banner')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'bSlot_3',3,'banner')">✕</button></div>
+                        <div class="photo-slot banner-slot" id="bSlot_4"><span class="slot-num">5</span><label class="slot-overlay" onclick="event.stopPropagation()"><input type="file" accept="image/*" onchange="loadSlot(this,'bSlot_4',4,'banner')"></label><button class="slot-del" onclick="event.stopPropagation();clearSlot(event,'bSlot_4',4,'banner')">✕</button></div>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="uploadPromoBanner()">💾 Simpan Banner</button>
+                <div class="promo-admin-list" id="promoAdminList"></div>
+            </div>
+            <!-- Lihat Semua -->
+            <div id="adminLihatSemua" class="tab-content">
+                <h3 style="color:#ffd700;margin-bottom:1rem;">👁️ Data Pengguna & Produk</h3>
+                <button class="btn-primary" onclick="displayAdminData()" style="margin-bottom:1rem;">🔄 Refresh Data</button>
+                <div id="adminDataList"></div>
+            </div>
+            <button class="btn-danger" onclick="logoutAdmin()" style="margin-top:1rem;">🔐 Logout Admin</button>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+// =============================================
+// CONFIGURATION — CHANGE ADMIN PHONE HERE
+// =============================================
+const ADMIN_PHONE_NUMBER = '081211727053'; // akun admin (nomor telepon) — rubah sesuai kebutuhan
+
+// =============================================
+// FIREBASE INIT
+// =============================================
+const firebaseConfig = {
+    apiKey: "AIzaSyD1rx4by3fEE9EDoZSqEB2ARE9GMAnfCUI",
+    authDomain: "catalog-javas-gecko-database.firebaseapp.com",
+    databaseURL: "https://catalog-javas-gecko-database-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "catalog-javas-gecko-database",
+    storageBucket: "catalog-javas-gecko-database.firebasestorage.app",
+    messagingSenderId: "939403571945",
+    appId: "1:939403571945:web:f783145c771d9da85ef678"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// =============================================
+// STATE
+// =============================================
+let currentUser = null;
+let allProducts = [];
+let filteredProducts = [];
+let currentSortFilter = null;
+let currentRadiusFilter = null;
+let currentCityFilter = '';
+let userLocation = null;
+let otpTimerInterval = null;
+let currentEditingProduct = null;
+let isAdminLoggedIn = false;
+
+// Promo slider state
+let promoSlides = [];
+let promoIndex = 0;
+let promoAutoInterval = null;
+
+// =============================================
+// INIT
+// =============================================
+function initializeApp() {
+    loadCurrentUser();
+    initializeAdminData();
+    setupProductListener();
+    setupPromoListener();
+    renderProfileDropdown();
+    requestUserLocation();
+    document.addEventListener('click', handleOutsideClick);
+}
+
+function initializeAdminData() {
+    // NOTE: Pastikan Firebase Realtime Database Rules di-set ke:
+    // { "rules": { ".read": true, ".write": true } }
+    // untuk development, atau buat rules yang lebih spesifik untuk production.
+    db.ref('admin/config').once('value', snapshot => {
+        if (!snapshot.exists()) {
+            db.ref('admin/config').set({ adminPhone: '62812345678', adminPassword: 'adminsangatsopanbaikhati', otpCode: '123456' });
+        }
+    });
+}
+
+function loadCurrentUser() {
+    const userData = localStorage.getItem('currentUser');
+    if (userData) { currentUser = JSON.parse(userData); }
+}
+
+function requestUserLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            userLocation = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        }, () => { userLocation = null; });
+    }
+}
+
+// =============================================
+// PROFILE DROPDOWN
+// =============================================
+function renderProfileDropdown() {
+    const dd = document.getElementById('profileDropdown');
+    const ph = document.getElementById('profileAvatarPlaceholder');
+    const pi = document.getElementById('profileAvatarImg');
+    const isAdmin = currentUser && currentUser.telepon === ADMIN_PHONE_NUMBER;
+
+    if (currentUser) {
+        ph.style.display = 'none';
+        if (currentUser.avatar) {
+            pi.src = currentUser.avatar;
+            pi.style.display = 'block';
+        } else {
+            pi.style.display = 'none';
+            ph.style.display = 'flex';
+            ph.textContent = currentUser.nama ? currentUser.nama[0].toUpperCase() : '👤';
+        }
+
+        dd.innerHTML = `
+            <div class="profile-dropdown-header">
+                <div class="profile-dropdown-name">${currentUser.nama}</div>
+                <div class="profile-dropdown-phone">${currentUser.telepon}</div>
+            </div>
+            <button class="profile-dropdown-item" onclick="closeDropdown();openEditProfileModal()">Edit Profil</button>
+            <button class="profile-dropdown-item" onclick="closeDropdown();openUploadModal()">Unggah Produk</button>
+            <button class="profile-dropdown-item" onclick="closeDropdown();openSellerPanel()">Panel Penjual</button>
+            ${isAdmin ? `<div class="profile-dropdown-divider"></div><button class="profile-dropdown-item" onclick="closeDropdown();openAdminPanel()">Panel Admin</button>` : ''}
+            <div class="profile-dropdown-divider"></div>
+            <button class="profile-dropdown-item danger" onclick="closeDropdown();logoutUser()">Logout</button>
+        `;
+    } else {
+        ph.style.display = 'flex';
+        ph.textContent = '👤';
+        pi.style.display = 'none';
+        dd.innerHTML = `
+            <div class="profile-dropdown-login">
+                <button class="btn-dd-login" onclick="closeDropdown();openAuthModal()">Login / Daftar</button>
+            </div>
+        `;
+    }
+}
+
+function toggleProfileDropdown() {
+    document.getElementById('profileDropdown').classList.toggle('open');
+}
+
+function closeDropdown() {
+    document.getElementById('profileDropdown').classList.remove('open');
+}
+
+function handleOutsideClick(e) {
+    const wrapper = document.getElementById('profileBtn').closest('.profile-wrapper');
+    if (!wrapper.contains(e.target)) closeDropdown();
+    // Close filter menus — check if click is outside the entire .filter-dropdown-wrapper
+    document.querySelectorAll('.filter-dropdown-wrapper').forEach(w => {
+        if (!w.contains(e.target)) {
+            w.querySelector('.filter-dropdown-menu').classList.remove('open');
+        }
+    });
+}
+
+// =============================================
+// AUTH
+// =============================================
+function openAuthModal() {
+    if (currentUser) { showNotification('✅ Anda sudah login!', 'success'); return; }
+    document.getElementById('authModal').classList.add('active');
+}
+
+function switchAuthTab(tab, btnEl) {
+    document.querySelectorAll('.auth-tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.auth-tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+    if (btnEl) btnEl.classList.add('active');
+}
+
+function handleLogin() {
+    const phone = document.getElementById('loginPhone').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!phone || !password) { showNotification('❌ Nomor telepon dan password harus diisi!', 'error'); return; }
+    db.ref('users').orderByChild('telepon').equalTo(phone).once('value', snapshot => {
+        if (!snapshot.exists()) { showNotification('❌ Nomor telepon tidak terdaftar!', 'error'); return; }
+        let found = false;
+        snapshot.forEach(child => {
+            if (child.val().password === password) {
+                const u = child.val();
+                if (u.blacklisted) { showNotification('🚫 Akun Anda telah diblacklist. Hubungi admin.', 'error'); found = true; return; }
+                currentUser = { uid: child.key, nama: u.nama, telepon: u.telepon, domisili: u.domisili, avatar: u.avatar || null, nameCooldown: u.nameCooldown || null, photoCooldown: u.photoCooldown || null };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                renderProfileDropdown();
+                showNotification('✅ Login berhasil!', 'success');
+                closeModal('authModal');
+                found = true;
+            }
+        });
+        if (!found) showNotification('❌ Password salah!', 'error');
+    });
+}
+
+// =============================================
+// PHOTO SLOT SYSTEM (upload, edit, banner)
+// =============================================
+// Stores base64 per slot: uploadSlots[0..4], editSlots[0..4], bannerSlots[0..4]
+const uploadSlots = [null,null,null,null,null];
+const editSlots   = [null,null,null,null,null];
+const bannerSlots = [null,null,null,null,null];
+
+function triggerSlotInput(slotId, idx, mode) {
+    const el = document.getElementById(slotId);
+    if (!el) return;
+    el.querySelector('input[type=file]').click();
+}
+
+function loadSlot(input, slotId, idx, mode) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const data = e.target.result;
+        if (mode === 'edit') editSlots[idx] = data;
+        else if (mode === 'banner') bannerSlots[idx] = data;
+        else uploadSlots[idx] = data;
+        renderSlot(slotId, data);
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+function renderSlot(slotId, src) {
+    const el = document.getElementById(slotId);
+    if (!el) return;
+    // Remove old preview
+    const old = el.querySelector('img.slot-preview');
+    if (old) old.remove();
+    if (src) {
+        const img = document.createElement('img');
+        img.src = src; img.className = 'slot-preview';
+        el.insertBefore(img, el.firstChild);
+        el.classList.add('has-image');
+    } else {
+        el.classList.remove('has-image');
+    }
+}
+
+function clearSlot(event, slotId, idx, mode) {
+    event.stopPropagation();
+    if (mode === 'edit') editSlots[idx] = null;
+    else if (mode === 'banner') bannerSlots[idx] = null;
+    else uploadSlots[idx] = null;
+    renderSlot(slotId, null);
+    const input = document.getElementById(slotId).querySelector('input[type=file]');
+    if (input) input.value = '';
+}
+
+function resetUploadSlots() {
+    for (let i=0; i<5; i++) { uploadSlots[i]=null; renderSlot('uSlot_'+i,null); const inp=document.getElementById('uSlot_'+i).querySelector('input[type=file]'); if(inp)inp.value=''; }
+}
+
+function resetEditSlots() {
+    for (let i=0; i<5; i++) { editSlots[i]=null; renderSlot('eSlot_'+i,null); const inp=document.getElementById('eSlot_'+i).querySelector('input[type=file]'); if(inp)inp.value=''; }
+}
+
+function resetBannerSlots() {
+    for (let i=0; i<5; i++) { bannerSlots[i]=null; renderSlot('bSlot_'+i,null); const inp=document.getElementById('bSlot_'+i).querySelector('input[type=file]'); if(inp)inp.value=''; }
+}
+
+function preloadEditSlots(images) {
+    resetEditSlots();
+    if (!images || !images.length) return;
+    images.slice(0,5).forEach((src,i) => { editSlots[i]=src; renderSlot('eSlot_'+i,src); });
+}
+
+function sendOTPToWhatsApp() {
+    const name = document.getElementById('regName').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const location = document.getElementById('regLocation').value.trim();
+    if (!name || !phone || !location) { showNotification('❌ Semua field harus diisi!', 'error'); return; }
+    db.ref('users').orderByChild('telepon').equalTo(phone).once('value', snapshot => {
+        if (snapshot.exists()) { showNotification('❌ Nomor telepon sudah terdaftar!', 'error'); return; }
+        db.ref('admin/config/adminPhone').once('value', snap => {
+            const adminPhone = snap.val() || '62812345678';
+            const message = `Halo kakak admin saya ingin daftarkan akun ${name} dengan nomor telepon ${phone} mohon kode otp nya min`;
+            window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
+            document.getElementById('registerStep1').style.display = 'none';
+            document.getElementById('registerStep2').style.display = 'block';
+            window.tempRegData = { name, phone, location };
+            startOTPTimer('otpTimer');
+        });
+    });
+}
+
+function startOTPTimer(elementId) {
+    clearInterval(otpTimerInterval);
+    let timeLeft = 600;
+    const timerEl = document.getElementById(elementId);
+    otpTimerInterval = setInterval(() => {
+        timeLeft--;
+        const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+        timerEl.classList.toggle('warning', timeLeft <= 60);
+        timerEl.textContent = `OTP berlaku: ${m}:${s.toString().padStart(2,'0')}`;
+        if (timeLeft <= 0) { clearInterval(otpTimerInterval); timerEl.textContent = '❌ OTP kadaluarsa!'; }
+    }, 1000);
+}
+
+function verifyOTPAndRegister() {
+    const otp = document.getElementById('regOTP').value;
+    const password = document.getElementById('regPassword').value;
+    if (!otp || !password) { showNotification('❌ OTP dan password harus diisi!', 'error'); return; }
+    if (password.length < 6) { showNotification('❌ Password minimal 6 karakter!', 'error'); return; }
+    db.ref('admin/config/otpCode').once('value', snapshot => {
+        if (otp !== snapshot.val()) { showNotification('❌ Kode OTP salah!', 'error'); return; }
+        const { name, phone, location } = window.tempRegData;
+        const ref = db.ref('users').push();
+        ref.set({ nama: name, telepon: phone, domisili: location, password, createdAt: new Date().toISOString() }).then(() => {
+            currentUser = { uid: ref.key, nama: name, telepon: phone, domisili: location, avatar: null };
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            renderProfileDropdown();
+            showNotification('✅ Akun berhasil dibuat!', 'success');
+            clearInterval(otpTimerInterval);
+            closeModal('authModal');
+            resetRegisterForm();
+        });
+    });
+}
+
+function resetRegisterForm() {
+    ['regName','regPhone','regLocation','regOTP','regPassword'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('registerStep1').style.display = 'block';
+    document.getElementById('registerStep2').style.display = 'none';
+}
+
+function backToRegisterStep1() { clearInterval(otpTimerInterval); resetRegisterForm(); }
+
+function sendForgotOTP() {
+    const phone = document.getElementById('forgotPhone').value.trim();
+    if (!phone) { showNotification('❌ Nomor telepon harus diisi!', 'error'); return; }
+    db.ref('users').orderByChild('telepon').equalTo(phone).once('value', snapshot => {
+        if (!snapshot.exists()) { showNotification('❌ Nomor telepon tidak terdaftar!', 'error'); return; }
+        db.ref('admin/config/adminPhone').once('value', snap => {
+            const adminPhone = snap.val() || '62812345678';
+            const message = `Halo kakak admin saya lupa password, nomor telepon saya ${phone}, mohon kode otp untuk reset password min`;
+            window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
+            document.getElementById('forgotStep1').style.display = 'none';
+            document.getElementById('forgotStep2').style.display = 'block';
+            window.tempForgotPhone = phone;
+            startOTPTimer('forgotOtpTimer');
+        });
+    });
+}
+
+function verifyForgotOTPAndReset() {
+    const otp = document.getElementById('forgotOTP').value;
+    const newPass = document.getElementById('forgotNewPassword').value;
+    if (!otp || !newPass) { showNotification('❌ OTP dan password baru harus diisi!', 'error'); return; }
+    if (newPass.length < 6) { showNotification('❌ Password minimal 6 karakter!', 'error'); return; }
+    db.ref('admin/config/otpCode').once('value', snapshot => {
+        if (otp !== snapshot.val()) { showNotification('❌ Kode OTP salah!', 'error'); return; }
+        db.ref('users').orderByChild('telepon').equalTo(window.tempForgotPhone).once('value', snap => {
+            snap.forEach(child => {
+                db.ref(`users/${child.key}/password`).set(newPass).then(() => {
+                    showNotification('✅ Password berhasil direset!', 'success');
+                    clearInterval(otpTimerInterval);
+                    closeModal('authModal');
+                    backToForgotStep1();
+                });
+            });
+        });
+    });
+}
+
+function backToForgotStep1() {
+    clearInterval(otpTimerInterval);
+    document.getElementById('forgotStep1').style.display = 'block';
+    document.getElementById('forgotStep2').style.display = 'none';
+    document.getElementById('forgotPhone').value = '';
+    document.getElementById('forgotOTP').value = '';
+    document.getElementById('forgotNewPassword').value = '';
+}
+
+function logoutUser() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    renderProfileDropdown();
+    showNotification('✅ Logout berhasil!', 'success');
+}
+
+// =============================================
+// EDIT PROFILE
+// =============================================
+const COOLDOWN_DAYS = 14;
+let pendingNewAvatar = null;
+
+function openEditProfileModal() {
+    if (!currentUser) { openAuthModal(); return; }
+    pendingNewAvatar = null;
+
+    // Load fresh data from DB
+    db.ref(`users/${currentUser.uid}`).once('value', snapshot => {
+        const u = snapshot.val();
+        if (!u) return;
+        // Sync
+        currentUser.nama = u.nama; currentUser.avatar = u.avatar || null;
+        currentUser.nameCooldown = u.nameCooldown || null; currentUser.photoCooldown = u.photoCooldown || null;
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+        document.getElementById('editProfileName').value = u.nama;
+        document.getElementById('editProfilePassword').value = '';
+        document.getElementById('editProfilePasswordConfirm').value = '';
+        document.getElementById('deleteAccountConfirmInput').value = '';
+
+        // Set hint for delete account
+        const hint = document.getElementById('deleteAccountNameHint');
+        if (hint) hint.textContent = `(${u.nama})`;
+
+        // Avatar preview
+        const prev = document.getElementById('profileEditPreview');
+        if (u.avatar) { prev.innerHTML = `<img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;">`; }
+        else { prev.innerHTML = u.nama ? u.nama[0].toUpperCase() : '👤'; }
+
+        // Cooldown notes
+        const nameCooldownNote = document.getElementById('nameCooldownNote');
+        const photoStatus = document.getElementById('profileEditPhotoStatus');
+
+        if (u.nameCooldown) {
+            const diff = daysLeft(u.nameCooldown);
+            if (diff > 0) {
+                nameCooldownNote.textContent = `Nama bisa diubah lagi dalam ${diff} hari`;
+                nameCooldownNote.className = 'cooldown-note warn';
+                document.getElementById('editProfileName').disabled = true;
+            } else {
+                nameCooldownNote.textContent = '';
+                document.getElementById('editProfileName').disabled = false;
+            }
+        } else {
+            nameCooldownNote.textContent = '';
+            document.getElementById('editProfileName').disabled = false;
+        }
+
+        if (u.photoCooldown) {
+            const diff = daysLeft(u.photoCooldown);
+            if (diff > 0) {
+                photoStatus.innerHTML = `<span class="cooldown-note warn">Foto bisa diubah lagi dalam ${diff} hari</span>`;
+                document.getElementById('profilePhotoInput').disabled = true;
+            } else {
+                photoStatus.innerHTML = '';
+                document.getElementById('profilePhotoInput').disabled = false;
+            }
+        } else {
+            photoStatus.innerHTML = '';
+            document.getElementById('profilePhotoInput').disabled = false;
+        }
+
+        document.getElementById('editProfileModal').classList.add('active');
+    });
+}
+
+function handleDeleteOwnAccount() {
+    if (!currentUser) return;
+    const input = document.getElementById('deleteAccountConfirmInput').value.trim();
+    const expected = `delete this account (${currentUser.nama})`;
+    if (input !== expected) {
+        showNotification('❌ Teks konfirmasi tidak sesuai!', 'error');
+        return;
+    }
+    if (!confirm('Apakah Anda benar-benar yakin? Akun dan semua produk Anda akan dihapus permanen!')) return;
+    const uid = currentUser.uid;
+    db.ref('products').orderByChild('userId').equalTo(uid).once('value', snap => {
+        const deletes = {};
+        snap.forEach(child => { deletes[`products/${child.key}`] = null; });
+        deletes[`users/${uid}`] = null;
+        db.ref().update(deletes).then(() => {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            renderProfileDropdown();
+            closeModal('editProfileModal');
+            showNotification('✅ Akun Anda telah dihapus!', 'success');
+        });
+    });
+}
+
+function daysLeft(isoDate) {
+    const cd = new Date(isoDate); cd.setDate(cd.getDate() + COOLDOWN_DAYS);
+    return Math.ceil((cd - new Date()) / (1000 * 60 * 60 * 24));
+}
+
+function previewProfilePhoto(input) {
+    if (!input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        pendingNewAvatar = e.target.result;
+        const prev = document.getElementById('profileEditPreview');
+        prev.innerHTML = `<img src="${pendingNewAvatar}" style="width:100%;height:100%;object-fit:cover;">`;
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+function saveProfileEdit() {
+    if (!currentUser) return;
+    const newName = document.getElementById('editProfileName').value.trim();
+    const newPass = document.getElementById('editProfilePassword').value;
+    const confirmPass = document.getElementById('editProfilePasswordConfirm').value;
+
+    if (!newName) { showNotification('❌ Nama tidak boleh kosong!', 'error'); return; }
+    if (newPass && newPass !== confirmPass) { showNotification('❌ Konfirmasi password tidak cocok!', 'error'); return; }
+    if (newPass && newPass.length < 6) { showNotification('❌ Password minimal 6 karakter!', 'error'); return; }
+
+    db.ref(`users/${currentUser.uid}`).once('value', snapshot => {
+        const u = snapshot.val();
+        const updates = {};
+
+        // Name change with cooldown
+        if (newName !== u.nama) {
+            if (u.nameCooldown && daysLeft(u.nameCooldown) > 0) {
+                showNotification(`❌ Nama masih dalam cooldown ${daysLeft(u.nameCooldown)} hari!`, 'error'); return;
+            }
+            updates.nama = newName;
+            updates.nameCooldown = new Date().toISOString();
+        }
+
+        // Photo change with cooldown
+        if (pendingNewAvatar) {
+            if (u.photoCooldown && daysLeft(u.photoCooldown) > 0) {
+                showNotification(`❌ Foto masih dalam cooldown ${daysLeft(u.photoCooldown)} hari!`, 'error'); return;
+            }
+            updates.avatar = pendingNewAvatar;
+            updates.photoCooldown = new Date().toISOString();
+        }
+
+        // Password — no cooldown
+        if (newPass) { updates.password = newPass; }
+
+        if (Object.keys(updates).length === 0) { showNotification('ℹ️ Tidak ada perubahan!'); return; }
+
+        db.ref(`users/${currentUser.uid}`).update(updates).then(() => {
+            // Sync currentUser
+            if (updates.nama) currentUser.nama = updates.nama;
+            if (updates.avatar) currentUser.avatar = updates.avatar;
+            if (updates.nameCooldown) currentUser.nameCooldown = updates.nameCooldown;
+            if (updates.photoCooldown) currentUser.photoCooldown = updates.photoCooldown;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            renderProfileDropdown();
+            showNotification('✅ Profil berhasil diperbarui!', 'success');
+            closeModal('editProfileModal');
+        });
+    });
+}
+
+// =============================================
+// PRODUCTS
+// =============================================
+function setupProductListener() {
+    db.ref('products').on('value', snapshot => {
+        allProducts = [];
+        snapshot.forEach(child => {
+            const val = child.val();
+            if (val && val.nama) allProducts.push({ id: child.key, ...val });
+        });
+        applyFilters();
+    }, err => {
+        console.error('Firebase read error:', err);
+        document.getElementById('productsGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Gagal memuat produk. Periksa koneksi.</p></div>';
+    });
+}
+
+// City coordinate table for Indonesian cities (for radius estimation)
+const CITY_COORDS = {
+    'jakarta': [-6.2088, 106.8456], 'bekasi': [-6.2349, 106.9896], 'depok': [-6.4025, 106.7942],
+    'bogor': [-6.5971, 106.8060], 'tangerang': [-6.1783, 106.6319], 'bandung': [-6.9175, 107.6191],
+    'surabaya': [-7.2575, 112.7521], 'medan': [3.5952, 98.6722], 'semarang': [-6.9667, 110.4167],
+    'makassar': [-5.1477, 119.4327], 'palembang': [-2.9761, 104.7754], 'yogyakarta': [-7.7956, 110.3695],
+    'pekanbaru': [0.5333, 101.4500], 'bandar lampung': [-5.4292, 105.2619], 'malang': [-7.9797, 112.6304],
+    'padang': [-0.9492, 100.3543], 'denpasar': [-8.6500, 115.2167], 'samarinda': [-0.5022, 117.1536],
+    'batam': [1.1301, 104.0530], 'pontianak': [-0.0263, 109.3425], 'banjarmasin': [-3.3194, 114.5908],
+    'manado': [1.4748, 124.8421], 'cimahi': [-6.8722, 107.5419], 'balikpapan': [-1.2379, 116.8529],
+    'tasikmalaya': [-7.3274, 108.2207], 'sukabumi': [-6.9278, 106.9304], 'cirebon': [-6.7061, 108.5570],
+    'serang': [-6.1200, 106.1500], 'solo': [-7.5561, 110.8317], 'surakarta': [-7.5561, 110.8317],
+    'madiun': [-7.6288, 111.5239], 'kediri': [-7.8166, 112.0114], 'jember': [-8.1724, 113.7019],
+    'purwokerto': [-7.4309, 109.2471], 'tegal': [-6.8797, 109.1256], 'palu': [-0.8917, 119.8707],
+    'kendari': [-3.9985, 122.5129], 'ambon': [-3.6954, 128.1814], 'jayapura': [-2.5337, 140.7181],
+    'mataram': [-8.5833, 116.1167], 'kupang': [-10.1772, 123.6070], 'ternate': [0.7833, 127.3667],
+};
+
+function estimateDistanceKm(domisili, userLoc) {
+    const d = domisili.toLowerCase();
+    for (const [city, [lat, lon]] of Object.entries(CITY_COORDS)) {
+        if (d.includes(city)) {
+            return haversine(userLoc.lat, userLoc.lon, lat, lon);
+        }
+    }
+    return null; // city not found in table
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateAllFilterChipLabel() {
+    const sortLabels = { newest:'Terbaru', oldest:'Terlama', price_low:'Harga ↑', price_high:'Harga ↓' };
+    const radiusLabels = { 10:'<10km', 20:'>20km' };
+    const cityQ = (document.getElementById('filterCity') ? document.getElementById('filterCity').value : '').trim();
+    const parts = [];
+    if (currentSortFilter) parts.push(sortLabels[currentSortFilter]);
+    if (currentRadiusFilter !== null) parts.push(radiusLabels[currentRadiusFilter]);
+    if (cityQ) parts.push(cityQ);
+    const chip = document.getElementById('allFilterChip');
+    const label = document.getElementById('allFilterChipLabel');
+    if (parts.length > 0) {
+        label.textContent = parts.join(' · ');
+        chip.classList.add('active');
+    } else {
+        label.textContent = 'Filter & Urutkan';
+        chip.classList.remove('active');
+    }
+}
+
+function applyFilters() {
+    const searchQ = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+    const cityQ = (document.getElementById('filterCity') ? document.getElementById('filterCity').value : '').toLowerCase().trim();
+
+    let results = [...allProducts];
+
+    // Search
+    if (searchQ) {
+        results = results.filter(p => p.nama.toLowerCase().includes(searchQ) || (p.deskripsi||'').toLowerCase().includes(searchQ) || (p.domisili||'').toLowerCase().includes(searchQ));
+    }
+
+    // City filter
+    if (cityQ) {
+        results = results.filter(p => (p.domisili||'').toLowerCase().includes(cityQ));
+    }
+
+    // Radius filter — geocode domisili by matching city name to known coords
+    if (currentRadiusFilter !== null) {
+        if (!userLocation) {
+            showNotification('Aktifkan GPS agar filter radius berfungsi', 'error');
+        } else {
+            results = results.filter(p => {
+                const dist = estimateDistanceKm(p.domisili || '', userLocation);
+                if (dist === null) return true; // unknown city — include by default
+                if (currentRadiusFilter === 10) return dist < 10;
+                if (currentRadiusFilter === 20) return dist > 20;
+                return true;
+            });
+        }
+    }
+
+    // Sort
+    if (currentSortFilter === 'newest') results.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
+    else if (currentSortFilter === 'oldest') results.sort((a,b) => new Date(a.createdAt||0) - new Date(b.createdAt||0));
+    else if (currentSortFilter === 'price_low') results.sort((a,b) => a.harga - b.harga);
+    else if (currentSortFilter === 'price_high') results.sort((a,b) => b.harga - a.harga);
+
+    filteredProducts = results;
+    renderProducts();
+    updateAllFilterChipLabel();
+
+    // Show/hide clear button
+    const hasFilter = searchQ || cityQ || currentSortFilter || currentRadiusFilter !== null;
+    document.getElementById('clearFiltersChip').style.display = hasFilter ? 'flex' : 'none';
+}
+
+function renderProducts() {
+    const grid = document.getElementById('productsGrid');
+    if (filteredProducts.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>Tidak ada produk ditemukan</p></div>';
+        return;
+    }
+    grid.innerHTML = filteredProducts.map(p => `
+        <div class="product-card" onclick="openDetailModal('${p.id}')">
+            <div class="product-image-wrap">
+                <img src="${(p.images ? (Array.isArray(p.images) ? p.images[0] : Object.values(p.images)[0]) : null) || p.image || ''}" alt="${p.nama}" loading="lazy">
+                ${p.status === 'habis' ? '<div class="product-badge">HABIS</div>' : ''}
+            </div>
+            <div class="product-info">
+                <div class="product-name">${p.nama}</div>
+                <div class="product-price">Rp ${Number(p.harga).toLocaleString('id-ID')}</div>
+                <div class="product-meta">📞 ${p.telepon}</div>
+                <div class="product-meta">📍 ${p.domisili}</div>
+                <button class="btn-buy-small" ${p.status==='habis'?'disabled':''} onclick="event.stopPropagation();buyProduct('${p.telepon}','${p.nama}',${p.harga})">
+                    ${p.status==='habis'?'⛔ Habis':'💬 Belanja'}
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function openDetailModal(productId) {
+    db.ref(`products/${productId}`).once('value', snapshot => {
+        const p = snapshot.val();
+        if (!p) return;
+        document.getElementById('detailTitle').textContent = p.nama;
+        const rawImgs = p.images;
+        const imgs = rawImgs
+            ? (Array.isArray(rawImgs) ? rawImgs : Object.values(rawImgs))
+            : [p.image || ''];
+        const n = imgs.length;
+        const imgsJson = JSON.stringify(imgs).replace(/'/g,"\\'");
+
+        document.getElementById('detailContent').innerHTML = `
+            <div id="dSliderWrap" style="position:relative;background:#111;overflow:hidden;aspect-ratio:1/1;touch-action:none;">
+                <div id="dTrack" style="display:flex;height:100%;transition:transform 0.35s ease;will-change:transform;">
+                    ${imgs.map(s=>`<div style="flex:0 0 100%;height:100%;"><img src="${s}" style="width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;display:block;"></div>`).join('')}
+                </div>
+                <span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.5);color:#ccc;font-size:0.7rem;padding:2px 8px;border-radius:10px;" id="dCounter">1/${n}</span>
+                <button onclick="openImgFullscreen('${productId}','${imgsJson}')" style="position:absolute;top:8px;right:48px;background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:0.9rem;cursor:pointer;">⛶</button>
+                <button onclick="shareProduct('${p.nama}',${p.harga})" style="position:absolute;top:8px;right:10px;background:rgba(0,0,0,0.5);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;">↑</button>
+                ${n>1?`<div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:5px;" id="dDots">
+                    ${imgs.map((_,i)=>`<div style="width:${i===0?'18px':'7px'};height:7px;border-radius:4px;background:${i===0?'#ffd700':'rgba(255,255,255,0.45)'};transition:all 0.3s;" id="dDot_${i}"></div>`).join('')}
+                </div>`:''}
+            </div>
+            ${n>1?`<div style="display:flex;gap:0.5rem;overflow-x:auto;scrollbar-width:none;padding:0.5rem 0.8rem;" id="dThumbs">
+                ${imgs.map((s,i)=>`<img src="${s}" onclick="dGoTo(${i})" style="width:56px;height:56px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid ${i===0?'#ffd700':'#333'};flex-shrink:0;transition:border-color 0.2s;" id="dThumb_${i}">`).join('')}
+            </div>`:''}
+            <div style="padding:0 0.8rem 0.8rem;">
+                <div style="font-size:1.5rem;font-weight:bold;color:#ffd700;margin-bottom:0.3rem;">Rp ${Number(p.harga).toLocaleString('id-ID')}</div>
+                <div style="font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.8rem;">${p.nama}</div>
+                <div style="background:#1a1a1a;padding:0.8rem;border-radius:8px;margin-bottom:0.8rem;font-size:0.85rem;">
+                    <div style="margin-bottom:0.4rem;"><span style="color:#888;">📞 Penjual: </span><span style="color:#fff;">${p.telepon}</span></div>
+                    <div style="margin-bottom:0.4rem;"><span style="color:#888;">📍 Domisili: </span><span style="color:#fff;">${p.domisili}</span></div>
+                    <div><span style="color:#888;">Status: </span><span style="color:${p.status==='habis'?'#ff4444':'#44dd44'};">${p.status==='habis'?'⛔ HABIS':'✅ TERSEDIA'}</span></div>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <div style="color:#ffd700;font-weight:bold;font-size:0.9rem;margin-bottom:0.4rem;">Deskripsi</div>
+                    <p style="color:#ccc;font-size:0.85rem;line-height:1.6;">${p.deskripsi}</p>
+                </div>
+                <div style="display:flex;gap:0.5rem;padding-bottom:0.5rem;">
+                    <button onclick="shareProduct('${p.nama}',${p.harga})" style="flex:0 0 auto;padding:0.8rem 1rem;background:#2d2d2d;color:#fff;border:1.5px solid #555;border-radius:8px;cursor:pointer;font-size:0.85rem;">↑ Bagikan</button>
+                    <button class="btn-primary" onclick="buyProduct('${p.telepon}','${p.nama}',${p.harga})" ${p.status==='habis'?'disabled':''} style="flex:1;margin-top:0;">
+                        ${p.status==='habis'?'⛔ Produk Habis':'💬 Belanja Sekarang'}
+                    </button>
+                </div>
+            </div>`;
+
+        let dIdx = 0;
+        window._detailActiveImg = 0;
+        // Set pixel width on each slide after DOM is ready
+        requestAnimationFrame(() => {
+            const wrap = document.getElementById('dSliderWrap');
+            if (!wrap) return;
+            const w = wrap.offsetWidth;
+            document.querySelectorAll('#dTrack > div').forEach(s => s.style.width = w + 'px');
+            document.getElementById('dTrack').style.width = (w * n) + 'px';
+        });
+        window.dGoTo = i => {
+            dIdx = i; window._detailActiveImg = i;
+            const w = document.getElementById('dSliderWrap').offsetWidth;
+            document.getElementById('dTrack').style.transform = `translateX(-${i*w}px)`;
+            document.getElementById('dCounter').textContent = `${i+1}/${n}`;
+            document.querySelectorAll('[id^="dThumb_"]').forEach((t,j)=>t.style.border=`2px solid ${j===i?'#ffd700':'#333'}`);
+            document.querySelectorAll('[id^="dDot_"]').forEach((d,j)=>{d.style.width=j===i?'18px':'7px';d.style.background=j===i?'#ffd700':'rgba(255,255,255,0.45)';});
+        };
+        makeSlider(document.getElementById('dSliderWrap'), ()=>dGoTo((dIdx-1+n)%n), ()=>dGoTo((dIdx+1)%n));
+        document.getElementById('detailModal').classList.add('active');
+    });
+}
+
+function openImgFullscreen(productId, images) {
+    const arr = typeof images === 'string' ? JSON.parse(images) : images;
+    let idx = window._detailActiveImg || 0;
+    const overlay = document.createElement('div');
+    overlay.id = 'imgFullscreenOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;';
+    overlay.innerHTML = `
+        <div style="position:absolute;top:12px;right:12px;z-index:2;display:flex;gap:8px;align-items:center;">
+            <span id="fsCounter" style="color:#fff;font-size:0.85rem;background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:10px;">${idx+1}/${arr.length}</span>
+            <button onclick="document.getElementById('imgFullscreenOverlay').remove()"
+                style="background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:34px;height:34px;font-size:1.3rem;cursor:pointer;">×</button>
+        </div>
+        <div id="fsTrackWrap" style="width:100%;overflow:hidden;"><div id="fsTrack" style="display:flex;transition:transform 0.35s ease;will-change:transform;">
+            ${arr.map(s=>`<div style="min-width:100%;display:flex;align-items:center;justify-content:center;"><img src="${s}" style="max-width:100%;max-height:85vh;object-fit:contain;user-select:none;pointer-events:none;"></div>`).join('')}
+        </div></div>
+        ${arr.length>1?`<button onclick="fsGo((window._fsIdx-1+${arr.length})%${arr.length})" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:1.3rem;cursor:pointer;">‹</button>
+        <button onclick="fsGo((window._fsIdx+1)%${arr.length})" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:50%;width:36px;height:36px;font-size:1.3rem;cursor:pointer;">›</button>
+        <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;" id="fsDots">
+            ${arr.map((_,i)=>`<div style="width:${i===idx?'18px':'7px'};height:7px;border-radius:4px;background:${i===idx?'#ffd700':'rgba(255,255,255,0.4)'};transition:all 0.3s;" id="fsDot_${i}"></div>`).join('')}
+        </div>`:''}`;
+    document.body.appendChild(overlay);
+    window._fsIdx = idx;
+    window.fsGo = i => {
+        window._fsIdx = i;
+        document.getElementById('fsTrack').style.transform = `translateX(-${i * window.innerWidth}px)`;
+        document.getElementById('fsCounter').textContent = `${i+1}/${arr.length}`;
+        document.querySelectorAll('[id^="fsDot_"]').forEach((d,j)=>{d.style.width=j===i?'18px':'7px';d.style.background=j===i?'#ffd700':'rgba(255,255,255,0.4)';});
+    };
+    if (idx > 0) document.getElementById('fsTrack').style.transform = `translateX(-${idx * window.innerWidth}px)`;
+    makeSlider(overlay, ()=>fsGo((window._fsIdx-1+arr.length)%arr.length), ()=>fsGo((window._fsIdx+1)%arr.length));
+}
+
+function shareProduct(nama, harga) {
+    // Placeholder — akan diisi nanti
+    showNotification('🔗 Fitur bagikan segera hadir!', 'success');
+}
+
+function buyProduct(phone, productName, price) {
+    const message = `Halo kak! Saya tertarik pada produk ini 🛍️\n\n*Nama Produk:* ${productName}\n\n💰 Harga: Rp ${Number(price).toLocaleString('id-ID')}\n\nBisa kita bicara lebih lanjut? 😊\n\n*note utamakan menggunakan jasa rekber terkenal atau COD pertengahan`;
+    window.open(`https://wa.me/${phone.replace(/\D/g,'')}?text=${encodeURIComponent(message)}`, '_blank');
+    closeModal('detailModal');
+}
+
+// =============================================
+// FILTERS
+// =============================================
+function toggleFilterMenu(event, menuId, chipEl) {
+    event.stopPropagation();
+    const menu = document.getElementById(menuId);
+    const isOpen = menu.classList.contains('open');
+    document.querySelectorAll('.filter-dropdown-menu').forEach(m => m.classList.remove('open'));
+    if (!isOpen) {
+        menu.classList.add('open');
+        const rect = chipEl.getBoundingClientRect();
+        const menuH = menu.offsetHeight;
+        const spaceBelow = window.innerHeight - rect.bottom - 8;
+        if (spaceBelow >= menuH || spaceBelow >= 200) {
+            menu.style.top = (rect.bottom + 8) + 'px';
+            menu.style.maxHeight = Math.max(spaceBelow - 8, 200) + 'px';
+        } else {
+            const spaceAbove = rect.top - 8;
+            menu.style.top = Math.max(rect.top - Math.min(menuH, spaceAbove) - 8, 8) + 'px';
+            menu.style.maxHeight = Math.max(spaceAbove - 8, 200) + 'px';
+        }
+        menu.style.left = Math.min(rect.left, window.innerWidth - menu.offsetWidth - 8) + 'px';
+        menu.style.overflowY = 'auto';
+    }
+}
+
+function setSortFilter(event, type, el) {
+    event.stopPropagation();
+    currentSortFilter = type;
+    document.querySelectorAll('#allFilterMenu .filter-menu-item[id^="fSort-"]').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    updateAllFilterChipLabel();
+    applyFilters();
+}
+
+function setRadiusFilter(event, radius, el) {
+    event.stopPropagation();
+    currentRadiusFilter = radius;
+    document.querySelectorAll('#allFilterMenu .filter-menu-item[id^="fRadius-"]').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    if (radius !== null && !userLocation) showNotification('ℹ️ Aktifkan GPS untuk filter radius', 'error');
+    updateAllFilterChipLabel();
+    applyFilters();
+}
+
+function clearAllFilters() {
+    currentSortFilter = null; currentRadiusFilter = null;
+    document.getElementById('searchInput').value = '';
+    if (document.getElementById('filterCity')) document.getElementById('filterCity').value = '';
+    document.getElementById('allFilterChipLabel').textContent = 'Filter & Urutkan';
+    document.getElementById('allFilterChip').classList.remove('active');
+    document.querySelectorAll('.filter-menu-item').forEach(i => i.classList.remove('selected'));
+    applyFilters();
+}
+
+// =============================================
+// UPLOAD PRODUCT
+// =============================================
+function openUploadModal() {
+    if (!currentUser) { showNotification('❌ Anda harus login terlebih dahulu!', 'error'); openAuthModal(); return; }
+    document.getElementById('uploadModal').classList.add('active');
+}
+
+function handleUploadProduct() {
+    const name = document.getElementById('productName').value.trim();
+    const desc = document.getElementById('productDescription').value.trim();
+    const price = document.getElementById('productPrice').value;
+    const location = document.getElementById('productLocation').value.trim();
+    const images = uploadSlots.filter(s => s !== null);
+    if (images.length === 0 || !name || !desc || !price || !location) {
+        showNotification('❌ Semua field harus diisi dan minimal 1 foto!', 'error'); return;
+    }
+    db.ref('products').push().set({
+        nama: name, deskripsi: desc, harga: parseInt(price), domisili: location,
+        telepon: currentUser.telepon, image: images[0], images: images,
+        status: 'tersedia', userId: currentUser.uid, createdAt: new Date().toISOString()
+    }).then(() => {
+        showNotification('✅ Produk berhasil diunggah!', 'success');
+        ['productName','productDescription','productPrice','productLocation'].forEach(id => document.getElementById(id).value = '');
+        resetUploadSlots();
+        closeModal('uploadModal');
+    }).catch(err => showNotification('❌ Gagal upload: ' + err.message, 'error'));
+}
+
+// =============================================
+// SELLER PANEL
+// =============================================
+function openSellerPanel() {
+    if (!currentUser) { showNotification('❌ Anda harus login terlebih dahulu!', 'error'); openAuthModal(); return; }
+    displaySellerProducts();
+    document.getElementById('sellerPanelModal').classList.add('active');
+}
+
+function displaySellerProducts() {
+    const list = document.getElementById('sellerProductsList');
+    list.innerHTML = '<div style="text-align:center;padding:1rem;"><div class="loading"></div></div>';
+    // Fetch semua produk lalu filter di client (menghindari bug Firebase index)
+    db.ref('products').once('value', snapshot => {
+        const products = [];
+        snapshot.forEach(child => {
+            const v = child.val();
+            if (v && v.userId === currentUser.uid) products.push({ id: child.key, ...v });
+        });
+        if (products.length === 0) { list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>Belum ada produk</p></div>'; return; }
+        list.innerHTML = `
+            <table class="products-table">
+                <thead><tr><th>Foto</th><th>Nama</th><th>Harga</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody>${products.map(p => `
+                    <tr>
+                        <td><img src="${(p.images ? (Array.isArray(p.images) ? p.images[0] : Object.values(p.images)[0]) : null) || p.image || ''}" class="table-image"></td>
+                        <td>${p.nama}</td>
+                        <td>Rp ${Number(p.harga).toLocaleString('id-ID')}</td>
+                        <td><span class="status-badge status-${p.status}">${p.status==='habis'?'⛔ HABIS':'✅ TERSEDIA'}</span></td>
+                        <td><div class="action-buttons">
+                            <button class="btn-action btn-edit" onclick="openEditProduct('${p.id}')">✏️</button>
+                            <button class="btn-action btn-habis" onclick="toggleProductStatus('${p.id}','${p.status}')">${p.status==='habis'?'✅':'⚠️'}</button>
+                            <button class="btn-action btn-hapus" onclick="deleteProduct('${p.id}')">🗑️</button>
+                        </div></td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>`;
+    }, err => { list.innerHTML = `<p style="color:#ff4444;">❌ Gagal memuat: ${err.message}</p>`; });
+}
+
+function openEditProduct(productId) {
+    db.ref(`products/${productId}`).once('value', snapshot => {
+        const p = snapshot.val();
+        currentEditingProduct = { id: productId, ...p };
+        document.getElementById('editProductName').value = p.nama;
+        document.getElementById('editProductDescription').value = p.deskripsi;
+        document.getElementById('editProductPrice').value = p.harga;
+        document.getElementById('editProductLocation').value = p.domisili;
+        // Preload existing images into edit slots
+        const imgs = p.images
+            ? (Array.isArray(p.images) ? p.images : Object.values(p.images))
+            : (p.image ? [p.image] : []);
+        preloadEditSlots(imgs);
+        document.getElementById('editModal').classList.add('active');
+    });
+}
+
+function handleEditProduct() {
+    const updateData = {
+        nama: document.getElementById('editProductName').value,
+        deskripsi: document.getElementById('editProductDescription').value,
+        harga: parseInt(document.getElementById('editProductPrice').value),
+        domisili: document.getElementById('editProductLocation').value
+    };
+    const images = editSlots.filter(s => s !== null);
+    if (images.length > 0) {
+        updateData.image = images[0];
+        updateData.images = images;
+    }
+    db.ref(`products/${currentEditingProduct.id}`).update(updateData).then(() => {
+        showNotification('✅ Produk berhasil diperbarui!', 'success');
+        closeModal('editModal');
+        displaySellerProducts();
+    }).catch(err => showNotification('❌ Gagal simpan: ' + err.message, 'error'));
+}
+
+function toggleProductStatus(productId, currentStatus) {
+    const newStatus = currentStatus === 'habis' ? 'tersedia' : 'habis';
+    db.ref(`products/${productId}/status`).set(newStatus).then(() => { showNotification(newStatus==='habis'?'⚠️ Ditandai habis':'✅ Ditandai tersedia','success'); displaySellerProducts(); });
+}
+
+function deleteProduct(productId) {
+    if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+        db.ref(`products/${productId}`).remove().then(() => { showNotification('✅ Produk berhasil dihapus!','success'); displaySellerProducts(); });
+    }
+}
+
+// =============================================
+// PROMO BANNER
+// =============================================
+function setupPromoListener() {
+    db.ref('admin/promos').on('value', snapshot => {
+        promoSlides = [];
+        snapshot.forEach(child => promoSlides.push({ id: child.key, ...child.val() }));
+        renderPromoSlider();
+    });
+}
+
+function renderPromoSlider() {
+    const track = document.getElementById('promoTrack');
+    const dots = document.getElementById('promoDots');
+    if (promoSlides.length === 0) {
+        track.innerHTML = `<div class="promo-slide"><div class="promo-slide-inner"><div class="promo-slide-empty">🦎<span>Belum ada banner promo</span></div></div></div>`;
+        dots.innerHTML = '';
+        return;
+    }
+    track.innerHTML = promoSlides.map(s => `<div class="promo-slide"><div class="promo-slide-inner"><img src="${s.image}" alt="Promo"></div></div>`).join('');
+    dots.innerHTML = promoSlides.map((_,i) => `<div class="promo-dot ${i===0?'active':''}" onclick="goToPromoSlide(${i})"></div>`).join('');
+    promoIndex = 0;
+    // Set pixel width per slide so translateX(px) is always accurate
+    requestAnimationFrame(() => {
+        const slider = document.getElementById('promoSlider');
+        const w = slider.offsetWidth;
+        document.querySelectorAll('.promo-slide').forEach(s => s.style.width = w + 'px');
+        document.getElementById('promoTrack').style.width = (w * promoSlides.length) + 'px';
+        updatePromoSlider();
+        startPromoAuto();
+        setupPromoGestures();
+    });
+}
+
+function updatePromoSlider() {
+    const slider = document.getElementById('promoSlider');
+    const w = slider.offsetWidth;
+    document.getElementById('promoTrack').style.transform = `translateX(-${promoIndex * w}px)`;
+    document.querySelectorAll('.promo-dot').forEach((d,i) => d.classList.toggle('active', i===promoIndex));
+}
+
+function promoPrev() { if (!promoSlides.length) return; promoIndex=(promoIndex-1+promoSlides.length)%promoSlides.length; updatePromoSlider(); }
+function promoNext() { if (!promoSlides.length) return; promoIndex=(promoIndex+1)%promoSlides.length; updatePromoSlider(); }
+function goToPromoSlide(i) { promoIndex=i; updatePromoSlider(); }
+
+function startPromoAuto() {
+    clearInterval(promoAutoInterval);
+    if (promoSlides.length > 1) promoAutoInterval = setInterval(promoNext, 4000);
+}
+
+// ===== UNIFIED SLIDER GESTURE =====
+function makeSlider(el, onPrev, onNext) {
+    if (el._sliderReady) return;
+    el._sliderReady = true;
+    let startX = 0, dragging = false;
+    const THRESHOLD = 40;
+
+    el.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) { startX = e.touches[0].clientX; dragging = true; }
+    }, { passive: true });
+    el.addEventListener('touchmove', e => {
+        if (dragging) e.preventDefault();
+    }, { passive: false });
+    el.addEventListener('touchend', e => {
+        if (!dragging) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > THRESHOLD) dx < 0 ? onNext() : onPrev();
+        dragging = false;
+    }, { passive: true });
+
+    el.addEventListener('mousedown', e => { startX = e.clientX; dragging = false; });
+    el.addEventListener('mousemove', e => { if (e.buttons===1 && Math.abs(e.clientX-startX)>10) dragging=true; });
+    el.addEventListener('mouseup', e => {
+        if (dragging) { const dx=e.clientX-startX; if(Math.abs(dx)>THRESHOLD) dx<0?onNext():onPrev(); }
+        dragging=false;
+    });
+}
+
+function setupPromoGestures() {
+    makeSlider(document.getElementById('promoSlider'), promoPrev, promoNext);
+}
+
+// =============================================
+// ADMIN PANEL
+// =============================================
+function openAdminPanel() {
+    // Only accessible if current user is admin
+    if (!currentUser || currentUser.telepon !== ADMIN_PHONE_NUMBER) { showNotification('❌ Akses ditolak!', 'error'); return; }
+    document.getElementById('adminLoginForm').style.display = 'block';
+    document.getElementById('adminPanelContent').style.display = 'none';
+    document.getElementById('adminPassword').value = '';
+    document.getElementById('adminPanelModal').classList.add('active');
+}
+
+function loginAdmin() {
+    const password = document.getElementById('adminPassword').value;
+    db.ref('admin/config/adminPassword').once('value', snapshot => {
+        if (password !== snapshot.val()) { showNotification('❌ Password admin salah!', 'error'); return; }
+        document.getElementById('adminLoginForm').style.display = 'none';
+        document.getElementById('adminPanelContent').style.display = 'block';
+        isAdminLoggedIn = true;
+        loadAdminData();
+    });
+}
+
+function loadAdminData() {
+    db.ref('admin/config').once('value', snapshot => {
+        const config = snapshot.val();
+        document.getElementById('currentAdminPhone').textContent = config.adminPhone || '-';
+        document.getElementById('otpDisplay').textContent = '••••••';
+    });
+    loadPromoAdminList();
+}
+
+function switchAdminTab(tab, btnEl) {
+    document.querySelectorAll('#adminPanelContent .tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('#adminPanelContent .tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+    if (btnEl) btnEl.classList.add('active');
+    if (tab === 'adminLihatSemua') displayAdminData();
+    if (tab === 'adminPromo') loadPromoAdminList();
+}
+
+function changeAdminPassword() {
+    const oldPass = document.getElementById('oldAdminPassword').value;
+    const newPass = document.getElementById('newAdminPassword').value;
+    if (!oldPass || !newPass) { showNotification('❌ Password tidak boleh kosong!', 'error'); return; }
+    db.ref('admin/config/adminPassword').once('value', snapshot => {
+        if (oldPass !== snapshot.val()) { showNotification('❌ Password lama salah!', 'error'); return; }
+        db.ref('admin/config/adminPassword').set(newPass).then(() => {
+            showNotification('✅ Password admin berhasil diubah!', 'success');
+            document.getElementById('oldAdminPassword').value = '';
+            document.getElementById('newAdminPassword').value = '';
+        });
+    });
+}
+
+function updateAdminPhone() {
+    const newPhone = document.getElementById('newAdminPhone').value.trim();
+    if (!newPhone) { showNotification('❌ Nomor telepon tidak boleh kosong!', 'error'); return; }
+    if (!newPhone.startsWith('62')) { showNotification('❌ Gunakan format 62XXXXXXXXXXX!', 'error'); return; }
+    db.ref('admin/config/adminPhone').set(newPhone).then(() => {
+        showNotification('✅ Nomor WhatsApp admin berhasil diubah!', 'success');
+        document.getElementById('currentAdminPhone').textContent = newPhone;
+        document.getElementById('newAdminPhone').value = '';
+    });
+}
+
+function updateOTP() {
+    const newOTP = document.getElementById('newOTP').value.trim();
+    if (!newOTP || newOTP.length !== 6 || !/^\d+$/.test(newOTP)) { showNotification('❌ OTP harus 6 digit angka!', 'error'); return; }
+    db.ref('admin/config/otpCode').set(newOTP).then(() => {
+        showNotification('✅ Kode OTP berhasil diubah!', 'success');
+        document.getElementById('otpDisplay').textContent = '••••••';
+        document.getElementById('newOTP').value = '';
+    });
+}
+
+function toggleOTPDisplay() {
+    const el = document.getElementById('otpDisplay');
+    const hidden = el.textContent === '••••••';
+    db.ref('admin/config/otpCode').once('value', snapshot => { el.textContent = hidden ? snapshot.val() : '••••••'; });
+}
+
+function copyOTP() {
+    db.ref('admin/config/otpCode').once('value', snapshot => {
+        navigator.clipboard.writeText(snapshot.val()).then(() => showNotification('✅ OTP berhasil dicopy!', 'success'));
+    });
+}
+
+function displayAdminData() {
+    document.getElementById('adminDataList').innerHTML = '<div style="text-align:center;padding:1rem;"><div class="loading"></div></div>';
+    db.ref('users').once('value', usersSnap => {
+        db.ref('products').once('value', prodSnap => {
+            const users = [], products = [];
+            usersSnap.forEach(c => { const v=c.val(); if(v) users.push({ uid: c.key, ...v }); });
+            prodSnap.forEach(c => { const v=c.val(); if(v) products.push({ id: c.key, ...v }); });
+            document.getElementById('adminDataList').innerHTML = `
+                <h4 style="color:#ffd700;margin-bottom:0.8rem;">👥 Pengguna (${users.length})</h4>
+                ${users.length===0?'<p style="color:#888;font-size:0.85rem;padding:0.5rem;">Belum ada pengguna terdaftar selain admin.</p>':''}
+                <div style="overflow-x:auto;">
+                <table class="admin-table">
+                    <thead><tr><th>Nama</th><th>Telepon</th><th>Domisili</th><th>Password</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody>${users.map(u=>`
+                        <tr style="${u.blacklisted?'opacity:0.5;background:#2a0000;':''}">
+                            <td>${u.nama||'-'}</td>
+                            <td>${u.telepon||'-'}</td>
+                            <td>${u.domisili||'-'}</td>
+                            <td>
+                                <div class="password-display" style="min-width:120px;">
+                                    <span style="flex:1;font-size:0.8rem;" id="adminPassDisplay_${u.uid}">••••••</span>
+                                    <button class="btn-toggle-pass" onclick="toggleAdminUserPass('${u.uid}','${(u.password||'').replace(/'/g,"\\'")}')">👁️</button>
+                                    <button class="btn-copy" onclick="copyText('${(u.password||'').replace(/'/g,"\\'")}')">📋</button>
+                                </div>
+                            </td>
+                            <td><span style="font-size:0.75rem;color:${u.blacklisted?'#ff4444':'#44dd44'};">${u.blacklisted?'🚫 Diblacklist':'✅ Aktif'}</span></td>
+                            <td>
+                                <div class="action-buttons" style="flex-direction:column;gap:0.3rem;min-width:90px;">
+                                    <button class="btn-action" style="background:${u.blacklisted?'#44aa44':'#ff8800'};color:white;font-size:0.7rem;" onclick="adminToggleBlacklist('${u.uid}',${!!u.blacklisted})">${u.blacklisted?'✅ Unblacklist':'🚫 Blacklist'}</button>
+                                    <button class="btn-action btn-hapus" style="font-size:0.7rem;" onclick="adminDeleteUser('${u.uid}','${(u.nama||'').replace(/'/g,"\\'")}')">🗑️ Hapus</button>
+                                </div>
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+                </div>
+                <h4 style="color:#ffd700;margin:1.5rem 0 0.8rem;">🛍️ Produk (${products.length})</h4>
+                <div style="overflow-x:auto;">
+                <table class="admin-table">
+                    <thead><tr><th>Nama</th><th>Harga</th><th>Status</th><th>Penjual</th></tr></thead>
+                    <tbody>${products.map(p=>`<tr><td>${p.nama||'-'}</td><td>Rp ${Number(p.harga||0).toLocaleString('id-ID')}</td><td><span class="status-badge status-${p.status}">${p.status==='habis'?'⛔ HABIS':'✅ TERSEDIA'}</span></td><td>${p.telepon||'-'}</td></tr>`).join('')}</tbody>
+                </table>
+                </div>`;
+        }, err => { document.getElementById('adminDataList').innerHTML = `<p style="color:#ff4444;">❌ Gagal membaca produk: ${err.message}</p>`; });
+    }, err => { document.getElementById('adminDataList').innerHTML = `<p style="color:#ff4444;">❌ Gagal membaca data pengguna: ${err.message}<br><small>Pastikan Firebase Rules mengizinkan admin membaca data users.</small></p>`; });
+}
+
+function toggleAdminUserPass(uid, password) {
+    const el = document.getElementById(`adminPassDisplay_${uid}`);
+    if (!el) return;
+    el.textContent = el.textContent === '••••••' ? password : '••••••';
+}
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => showNotification('✅ Berhasil dicopy!', 'success'));
+}
+
+function adminDeleteUser(uid, nama) {
+    if (!confirm(`Hapus akun "${nama}"? Semua produknya juga akan dihapus. Tindakan ini tidak dapat dibatalkan!`)) return;
+    // Delete all products of this user first
+    db.ref('products').orderByChild('userId').equalTo(uid).once('value', snap => {
+        const deletes = {};
+        snap.forEach(child => { deletes[`products/${child.key}`] = null; });
+        deletes[`users/${uid}`] = null;
+        db.ref().update(deletes).then(() => {
+            showNotification(`✅ Akun "${nama}" berhasil dihapus!`, 'success');
+            displayAdminData();
+        });
+    });
+}
+
+function adminToggleBlacklist(uid, isCurrentlyBlacklisted) {
+    const newVal = !isCurrentlyBlacklisted;
+    db.ref(`users/${uid}/blacklisted`).set(newVal).then(() => {
+        showNotification(newVal ? '🚫 Akun di-blacklist!' : '✅ Akun di-unblacklist!', 'success');
+        displayAdminData();
+    });
+}
+
+function logoutAdmin() {
+    isAdminLoggedIn = false;
+    document.getElementById('adminLoginForm').style.display = 'block';
+    document.getElementById('adminPanelContent').style.display = 'none';
+    closeModal('adminPanelModal');
+    showNotification('✅ Logout admin berhasil!', 'success');
+}
+
+// Promo banner management
+function uploadPromoBanner() {
+    const images = bannerSlots.filter(s => s !== null);
+    if (images.length === 0) { showNotification('❌ Isi minimal 1 slot banner!', 'error'); return; }
+    const data = {};
+    images.forEach((img, i) => { data['banner_' + i] = { image: img, createdAt: new Date().toISOString() }; });
+    db.ref('admin/promos').set(data).then(() => {
+        showNotification(`✅ ${images.length} banner berhasil disimpan!`, 'success');
+        loadPromoAdminList();
+    }).catch(err => showNotification('❌ Gagal simpan: ' + err.message, 'error'));
+}
+
+function loadPromoAdminList() {
+    const list = document.getElementById('promoAdminList');
+    if (!list) return;
+    db.ref('admin/promos').once('value', snapshot => {
+        const banners = [];
+        snapshot.forEach(child => banners.push({ id: child.key, ...child.val() }));
+        if (banners.length === 0) { list.innerHTML = '<p style="color:#888;font-size:0.85rem;text-align:center;padding:1rem;">Belum ada banner aktif</p>'; return; }
+        list.innerHTML = '<p style="color:#aaa;font-size:0.8rem;margin-top:0.8rem;">Banner aktif saat ini (klik Simpan Banner untuk memperbarui):</p>' +
+            banners.map(b => `
+            <div class="promo-admin-item">
+                <img src="${b.image}" class="promo-admin-thumb">
+                <span class="promo-admin-info">${new Date(b.createdAt||Date.now()).toLocaleDateString('id-ID')}</span>
+                <button class="btn-remove-promo" onclick="removePromoBanner('${b.id}')">Hapus</button>
+            </div>`).join('');
+    });
+}
+
+function removePromoBanner(id) {
+    if (confirm('Hapus banner ini?')) {
+        db.ref(`admin/promos/${id}`).remove().then(() => { showNotification('✅ Banner dihapus!', 'success'); loadPromoAdminList(); });
+    }
+}
+
+// =============================================
+// UTILITIES
+// =============================================
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+function showNotification(message, type = 'success') {
+    const el = document.createElement('div');
+    el.className = `notification ${type}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+}
+
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+});
+
+initializeApp();
+</script>
+</body>
+</html>
